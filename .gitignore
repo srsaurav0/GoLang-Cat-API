@@ -1,0 +1,68 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output files from 'bee run' (Beego framework)
+bin/
+logs/
+# conf/app.conf
+
+# Directory for Beego static files (if generated during build or run)
+static/*
+!static/css/
+!static/js/
+!static/img/
+!static/fonts/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Go modules and dependencies
+go.sum
+vendor/
+
+# IDE/editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Go-specific files
+*.out
+*.log
+*.coverprofile
+*.cov
+
+# Node.js (if using npm for frontend assets)
+node_modules/
+package-lock.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+
+# Build output
+*.o
+*.a
+*.class
+*.pyc
+*.pyo
+*.pdb
+
+# Cache directories
+.cache/
+*.cache
+*.tmp/
+tmp/
+
+# Environments
+venv
+.venv
