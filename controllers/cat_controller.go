@@ -132,11 +132,11 @@ func (c *CatController) AddToFavourites() {
 
 	// Read the raw body
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
-	fmt.Println("Raw request body:", string(rawBody)) // Debug the raw body received
+	// fmt.Println("Raw request body:", string(rawBody)) // Debug the raw body received
 
 	// Parse the JSON body
 	var payload map[string]string
-	fmt.Println("Payload is:", payload) // Log parsing errors
+	// fmt.Println("Payload is:", payload) // Log parsing errors
 	if err := json.Unmarshal(rawBody, &payload); err != nil {
 		fmt.Println("Error unmarshaling JSON:", err) // Log parsing errors
 		c.Ctx.Output.SetStatus(400)
@@ -145,7 +145,7 @@ func (c *CatController) AddToFavourites() {
 	}
 
 	// Debug the parsed payload
-	fmt.Println("Parsed payload:", payload)
+	// fmt.Println("Parsed payload:", payload)
 
 	// Create the request to The Cat API
 	requestBody, _ := json.Marshal(payload)
@@ -280,7 +280,7 @@ func (c *CatController) Vote() {
 
 	// Log the raw response body from The Cat API
 	rawResponseBody, _ := io.ReadAll(resp.Body)
-	fmt.Println("Raw response from The Cat API:", string(rawResponseBody))
+	// fmt.Println("Raw response from The Cat API:", string(rawResponseBody))
 
 	if resp.StatusCode != http.StatusOK {
 		errorMessage, _ := io.ReadAll(resp.Body) // Read the error message
@@ -348,7 +348,7 @@ func (c *CatController) GetVotes() {
 		return
 	}
 
-	fmt.Println("Votes retrieved from Cat API:", result)
+	// fmt.Println("Votes retrieved from Cat API:", result)
 	c.Data["json"] = result
 	c.ServeJSON()
 }

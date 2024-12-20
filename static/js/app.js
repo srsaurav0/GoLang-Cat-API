@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         try {
-            console.log("Vote payload:", payload); // Debug payload
+            // console.log("Vote payload:", payload); // Debug payload
 
             const response = await fetch("/api/vote", {
                 method: "POST",
@@ -126,8 +126,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const result = await response.json(); // Parse JSON response on success
-            console.log("Vote recorded:", result);
+            // const result = await response.json(); // Parse JSON response on success
+            console.log("Vote recorded successfully!");
             alert(`Vote recorded: ${value > 0 ? "Up" : "Down"} for Image ID: ${imageId}`);
         } catch (error) {
             console.error("Error submitting vote:", error);
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const payload = { image_id: image.id, sub_id: subId };
 
         try {
-            console.log("Request payload:", JSON.stringify(payload)); // Debug the payload
+            // console.log("Request payload:", JSON.stringify(payload)); // Debug the payload
             const response = await fetch("/api/add-to-favourites", {
                 method: "POST",
                 headers: {
