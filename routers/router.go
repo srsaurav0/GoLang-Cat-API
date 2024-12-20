@@ -11,4 +11,9 @@ func init() {
 	beego.Router("/", &controllers.MainController{})
 	web.Router("/api/cats", &controllers.CatController{}, "get:FetchCatImages")
 	web.Router("/api/breeds", &controllers.CatController{}, "get:FetchBreeds")
+	web.Router("/api/add-to-favourites", &controllers.CatController{}, "post:AddToFavourites")
+	web.Router("/api/get-favourites", &controllers.CatController{}, "get:GetFavourites")
+	web.Router("/api/remove-favourite", &controllers.CatController{}, "delete:RemoveFavourite")
+	web.Router("/api/vote", &controllers.CatController{}, "post:Vote")
+	web.Router("/api/votes", &controllers.CatController{}, "get:GetVotes")
 }

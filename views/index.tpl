@@ -28,9 +28,9 @@
                     
                     <!-- Buttons -->
                     <div class="flex justify-between space-x-6">
-                        <button id="voting-heart" class="text-pink-500 font-semibold text-xl">❤️</button>
-                        <button id="voting-like" class="text-green-500 font-semibold text-xl">👍</button>
-                        <button id="voting-dislike" class="text-red-500 font-semibold text-xl">👎</button>
+                        <button id="voting-heart" style="font-size: larger; ">❤️</button>
+                        <button id="voting-like" style="font-size: larger;">👍</button>
+                        <button id="voting-dislike" style="font-size: larger;">👎</button>
                     </div>
                 </div>
             </div>
