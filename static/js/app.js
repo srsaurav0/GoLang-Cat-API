@@ -72,23 +72,119 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Add functionality to the heart button
         votingHeart.onclick = async () => {
-            handleFavorite(image); // Add to favorites
-            votingImage.src = placeholderImageUrl; // Set placeholder
-            fetchSingleCatImage(); // Fetch and display the next image
+            votingImage.src = placeholderImageUrl; // Show placeholder while loading
+        
+            const payload = {
+                image_id: image.id, // Assuming `currentImage` contains the current image details
+                sub_id: "user-123",        // Replace with dynamic user ID if applicable
+            };
+        
+            try {
+                const response = await fetch("/api/add-to-favourites", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+        
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+        
+                const result = await response.json();
+                console.log("API Response:", result);
+        
+                // Update the image with the next image from the API response
+                const nextImage = result.next_image;
+                if (nextImage) {
+                    votingImage.src = nextImage.url;
+                    votingImage.alt = "Cat";
+                    currentImage = nextImage; // Update current image reference
+                }
+            } catch (error) {
+                console.error("Error handling heart click:", error);
+            }
         };
 
         // Add functionality to the like button
         votingLike.onclick = async () => {
-            await handleVote(currentImage.id, "user-123", 1); // 1 for 'Like'
-            votingImage.src = "/static/img/placeholder2.gif"; // Show placeholder
-            await fetchSingleCatImage(); // Fetch and display next image
+            try {
+                votingImage.src = "/static/img/placeholder2.gif"; // Show placeholder
+        
+                // Payload for the vote API
+                const payload = {
+                    image_id: currentImage.id,
+                    sub_id: "user-123",
+                    value: 1, // 1 for Like
+                };
+        
+                // Call the vote API, which concurrently votes and fetches the next image
+                const response = await fetch("/api/vote", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+        
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+        
+                const result = await response.json();
+                console.log("API Response:", result);
+        
+                // Update the image with the next image from the API response
+                const nextImage = result.next_image;
+                if (nextImage) {
+                    votingImage.src = nextImage.url;
+                    votingImage.alt = "Cat";
+                    currentImage = nextImage; // Update current image reference
+                }
+            } catch (error) {
+                console.error("Error handling like click:", error);
+            }
         };
 
         // Add functionality to the dislike button
         votingDislike.onclick = async () => {
-            await handleVote(currentImage.id, "user-123", -1); // -1 for 'Dislike'
-            votingImage.src = "/static/img/placeholder2.gif"; // Show placeholder
-            await fetchSingleCatImage(); // Fetch and display next image
+            try {
+                votingImage.src = "/static/img/placeholder2.gif"; // Show placeholder
+        
+                // Payload for the vote API
+                const payload = {
+                    image_id: currentImage.id,
+                    sub_id: "user-123",
+                    value: -1, // -1 for Dislike
+                };
+        
+                // Call the vote API, which concurrently votes and fetches the next image
+                const response = await fetch("/api/vote", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+        
+                if (!response.ok) {
+                    throw new Error(`Vote submission failed: ${response.statusText}`);
+                }
+        
+                const result = await response.json();
+                console.log("Vote API Response:", result);
+        
+                // Update the UI with the next image from the response
+                const nextImage = result.next_image;
+                if (nextImage) {
+                    votingImage.src = nextImage.url;
+                    votingImage.alt = "Cat";
+                    currentImage = nextImage; // Update the current image reference
+                }
+            } catch (error) {
+                console.error("Error handling dislike click:", error);
+            }
         };
 
         // After fetchSingleCatImage updates with the actual image
@@ -97,44 +193,6 @@ document.addEventListener("DOMContentLoaded", function () {
             votingImage.alt = "Cat"; // Update alt text
         }, 100); // Optionally add a small delay for smooth transitions
     }
-
-    async function handleVote(imageId, subId, value) {
-        const payload = {
-            image_id: imageId,
-            sub_id: subId,
-            value: value, // 1 for 'Like', -1 for 'Dislike'
-        };
-
-        try {
-            // console.log("Vote payload:", payload); // Debug payload
-
-            const response = await fetch("/api/vote", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            console.log("Response is: ", response)
-
-            if (!response.ok) {
-                // If the response is not OK, try reading as plain text
-                const errorText = await response.text();
-                console.error("Error voting:", errorText);
-                alert(`Failed to submit vote: ${errorText}`);
-                return;
-            }
-
-            // const result = await response.json(); // Parse JSON response on success
-            console.log("Vote recorded successfully!");
-            alert(`Vote recorded: ${value > 0 ? "Up" : "Down"} for Image ID: ${imageId}`);
-        } catch (error) {
-            console.error("Error submitting vote:", error);
-            alert("An unexpected error occurred while submitting your vote.");
-        }
-    }
-
 
     // Function to fetch and render breeds data with search, dropdown, and slider functionality
     async function fetchBreedsTab() {
@@ -292,38 +350,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         } catch (error) {
             console.error("Error fetching favorites:", error);
-        }
-    }
-
-
-    // Handle adding an image to favorites
-    async function handleFavorite(image) {
-        const subId = "user-123"; // Replace with dynamic user ID if applicable
-        const payload = { image_id: image.id, sub_id: subId };
-
-        try {
-            // console.log("Request payload:", JSON.stringify(payload)); // Debug the payload
-            const response = await fetch("/api/add-to-favourites", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json", // Ensure JSON content type
-                },
-                body: JSON.stringify(payload), // Ensure payload is properly stringified
-            });
-
-            console.log("Raw response:", response); // Log the raw response
-
-            const result = await response.json(); // Attempt to parse the response
-            console.log("API Response:", result);
-
-            if (result && result.id) {
-                alert(`Added to favorites! Favourite ID: ${result.id}`);
-            } else {
-                alert("Failed to add to favorites. Invalid response.");
-            }
-        } catch (error) {
-            console.error("Error adding to favorites:", error);
-            alert("An error occurred while adding to favorites.");
         }
     }
 
