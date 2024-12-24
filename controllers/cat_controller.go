@@ -15,6 +15,7 @@ import (
 // CatController handles API requests
 type CatController struct {
 	web.Controller
+	HTTPClient *http.Client
 }
 
 // Structs to unmarshal Cat API responses
@@ -108,54 +109,134 @@ func (c *CatController) FetchBreeds() {
 	c.ServeJSON()
 }
 
-// func (c *CatController) FetchBreedsAndImages() {
-// 	baseURL, _ := web.AppConfig.String("catapi_base_url")
-// 	apiKey, _ := web.AppConfig.String("catapi_key")
+// func (c *CatController) FetchBreeds() {
+// 	baseURL, err := web.AppConfig.String("catapi_base_url")
+// 	if err != nil {
+// 		c.Ctx.Output.SetStatus(500)
+// 		c.Ctx.WriteString("Failed to load API base URL from config")
+// 		return
+// 	}
 
-// 	// Channels for concurrent tasks
+// 	apiKey, err := web.AppConfig.String("catapi_key")
+// 	if err != nil {
+// 		c.Ctx.Output.SetStatus(500)
+// 		c.Ctx.WriteString("Failed to load API key from config")
+// 		return
+// 	}
+
+// 	// Channels for concurrency
 // 	breedsChan := make(chan []map[string]interface{})
 // 	imagesChan := make(chan []map[string]interface{})
 // 	errorChan := make(chan error, 2)
 
+// 	fmt.Println("Mark 1")
+
+// 	// WaitGroup for goroutines
 // 	var wg sync.WaitGroup
 
-// 	// Fetch all breeds
+// 	// Task 1: Fetch Breeds
 // 	wg.Add(1)
 // 	go func() {
 // 		defer wg.Done()
-// 		breeds, err := fetchBreeds(baseURL, apiKey)
+// 		fmt.Println("Fetching breeds started...")
+// 		client := &http.Client{Timeout: 10 * time.Second}
+// 		req, err := http.NewRequest("GET", baseURL+"/breeds", nil)
 // 		if err != nil {
-// 			errorChan <- err
+// 			errorChan <- fmt.Errorf("Failed to create breeds request: %w", err)
 // 			return
 // 		}
-// 		breedsChan <- breeds
+// 		req.Header.Set("x-api-key", apiKey)
+
+// 		resp, err := client.Do(req)
+// 		if err != nil {
+// 			errorChan <- fmt.Errorf("Failed to fetch breeds: %w", err)
+// 			return
+// 		}
+// 		defer resp.Body.Close()
+
+// 		var breeds []map[string]interface{}
+// 		if err := json.NewDecoder(resp.Body).Decode(&breeds); err != nil {
+// 			errorChan <- fmt.Errorf("Failed to parse breeds response: %w", err)
+// 			return
+// 		}
+
+// 		if len(breeds) > 0 {
+// 			breedsChan <- breeds // Send to channel
+// 			fmt.Println("Number of breeds sent:", len(breeds))
+// 		} else {
+// 			errorChan <- fmt.Errorf("No breeds available")
+// 		}
 // 	}()
 
-// 	// Fetch images for the first breed
+// 	fmt.Println("Mark 2")
+
+// 	// Task 2: Fetch Images for First Breed
 // 	wg.Add(1)
 // 	go func() {
+// 		time.Sleep(5 * time.Second)
 // 		defer wg.Done()
-// 		// Placeholder breed ID until breeds are fetched
-// 		var breedID string = ""
+
+// 		fmt.Println("Waiting for breeds...")
+
+// 		var breeds []map[string]interface{}
 // 		select {
-// 		case breeds := <-breedsChan:
-// 			if len(breeds) > 0 {
-// 				breedID = breeds[0]["id"].(string)
-// 			}
+// 		case b := <-breedsChan:
+// 			breeds = b
+// 			fmt.Println("Breeds fetched in Task 2:", len(breeds))
 // 		case err := <-errorChan:
-// 			errorChan <- err
+// 			fmt.Println("Error while waiting for breeds:", err)
+// 			errorChan <- err // Forward error
 // 			return
 // 		}
 
-// 		images, err := fetchCatImages(baseURL, apiKey, breedID)
-// 		if err != nil {
-// 			errorChan <- err
+// 		fmt.Println("Breeds fetched:", len(breeds))
+
+// 		if len(breeds) == 0 {
+// 			errorChan <- fmt.Errorf("No breeds available")
 // 			return
 // 		}
-// 		imagesChan <- images
+
+// 		// Fetch images for the first breed
+// 		breedID, ok := breeds[0]["id"].(string)
+// 		if !ok {
+// 			errorChan <- fmt.Errorf("Invalid breed ID format")
+// 			return
+// 		}
+
+// 		fmt.Println("Fetching images for breed ID:", breedID)
+
+// 		client := &http.Client{Timeout: 10 * time.Second}
+// 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/images/search?breed_id=%s", baseURL, breedID), nil)
+// 		if err != nil {
+// 			errorChan <- fmt.Errorf("Failed to create images request: %w", err)
+// 			return
+// 		}
+// 		req.Header.Set("x-api-key", apiKey)
+
+// 		resp, err := client.Do(req)
+// 		if err != nil {
+// 			errorChan <- fmt.Errorf("Failed to fetch images: %w", err)
+// 			return
+// 		}
+// 		defer resp.Body.Close()
+
+// 		var images []map[string]interface{}
+// 		if err := json.NewDecoder(resp.Body).Decode(&images); err != nil {
+// 			errorChan <- fmt.Errorf("Failed to parse images response: %w", err)
+// 			return
+// 		}
+
+// 		if len(images) > 0 {
+// 			imagesChan <- images // Send data to channel
+// 			fmt.Println("Images for first breed fetched successfully")
+// 		} else {
+// 			errorChan <- fmt.Errorf("No images available")
+// 		}
 // 	}()
 
-// 	// Wait for all tasks to finish
+// 	fmt.Println("Mark 4")
+
+// 	// Close channels after tasks complete
 // 	go func() {
 // 		wg.Wait()
 // 		close(breedsChan)
@@ -168,24 +249,32 @@ func (c *CatController) FetchBreeds() {
 // 	var images []map[string]interface{}
 // 	var errors []error
 
+// 	fmt.Println("Mark 5")
+
 // 	for {
 // 		select {
-// 		case brd, ok := <-breedsChan:
+// 		case b, ok := <-breedsChan:
 // 			if ok {
-// 				breeds = brd
+// 				breeds = b
+// 				fmt.Println("Breeds received:", len(breeds))
 // 			} else {
+// 				fmt.Println("breedsChan closed")
 // 				breedsChan = nil
 // 			}
-// 		case img, ok := <-imagesChan:
+// 		case i, ok := <-imagesChan:
 // 			if ok {
-// 				images = img
+// 				images = i
+// 				fmt.Println("Images received:", len(images))
 // 			} else {
+// 				fmt.Println("imagesChan closed")
 // 				imagesChan = nil
 // 			}
 // 		case err, ok := <-errorChan:
 // 			if ok {
 // 				errors = append(errors, err)
+// 				fmt.Println("Error occurred:", err)
 // 			} else {
+// 				fmt.Println("errorChan closed")
 // 				errorChan = nil
 // 			}
 // 		}
@@ -196,18 +285,22 @@ func (c *CatController) FetchBreeds() {
 // 		}
 // 	}
 
+// 	fmt.Println("Mark 6")
+
 // 	// Handle errors
 // 	if len(errors) > 0 {
 // 		c.Ctx.Output.SetStatus(500)
 // 		c.Data["json"] = map[string]interface{}{
-// 			"error":   "Failed to fetch breeds or images",
+// 			"error":   "Failed to fetch data",
 // 			"details": errors,
 // 		}
 // 		c.ServeJSON()
 // 		return
 // 	}
 
-// 	// Send results
+// 	fmt.Println("Mark 7")
+
+// 	// Return breeds and first breed images
 // 	c.Data["json"] = map[string]interface{}{
 // 		"breeds": breeds,
 // 		"images": images,
@@ -223,6 +316,9 @@ func (c *CatController) AddToFavourites() {
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
 	if err != nil {
 		fmt.Println("Error reading request body:", err)
+		if c.Data == nil {
+			c.Data = make(map[interface{}]interface{}) // Initialize if nil
+		}
 		c.Ctx.Output.SetStatus(400)
 		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
 		c.ServeJSON()
@@ -366,7 +462,7 @@ func fetchCatImages(baseURL, apiKey, breedID string) ([]map[string]interface{}, 
 	client := &http.Client{}
 
 	// Construct the request URL
-	requestURL := fmt.Sprintf("%s/images/search?limit=10", baseURL)
+	requestURL := fmt.Sprintf("%s/images/search?limit=15", baseURL)
 	if breedID != "" {
 		requestURL += fmt.Sprintf("&breed_id=%s", breedID) // Append breed_id if provided
 	}
@@ -400,6 +496,10 @@ func fetchCatImages(baseURL, apiKey, breedID string) ([]map[string]interface{}, 
 }
 
 func (c *CatController) GetFavourites() {
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
+
 	baseURL, _ := web.AppConfig.String("catapi_base_url")
 	apiKey, _ := web.AppConfig.String("catapi_key")
 
@@ -410,7 +510,11 @@ func (c *CatController) GetFavourites() {
 		requestURL += "?sub_id=" + subID
 	}
 
-	client := &http.Client{}
+	client := c.HTTPClient // Use the injected HTTP client
+	if client == nil {
+		client = &http.Client{} // Fallback to default if not injected
+	}
+
 	req, _ := http.NewRequest("GET", requestURL, nil)
 	req.Header.Set("x-api-key", apiKey)
 

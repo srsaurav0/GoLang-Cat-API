@@ -9,7 +9,6 @@ import (
 
 func init() {
 	beego.Router("/", &controllers.MainController{})
-	// beego.Router("/", &controllers.MainController{}, "get:HomePage")
 	web.Router("/api/cats", &controllers.CatController{}, "get:FetchCatImages")
 	web.Router("/api/breeds", &controllers.CatController{}, "get:FetchBreeds")
 	web.Router("/api/add-to-favourites", &controllers.CatController{}, "post:AddToFavourites")

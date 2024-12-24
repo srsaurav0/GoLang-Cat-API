@@ -43,3 +43,15 @@ npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css --watch
 
 
 bee run
+
+
+go test ./... -coverprofile=coverage.out
+
+# Display total coverage percentage
+go tool cover -func=coverage.out | grep total: | awk '{print $3}'
+
+# Generate HTML coverage report (optional)
+go tool cover -html=coverage.out -o coverage.html
+
+# Open the HTML report (optional)
+open coverage.html

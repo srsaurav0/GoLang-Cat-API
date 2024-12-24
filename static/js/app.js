@@ -9,10 +9,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const breedsSuggestions = document.getElementById("breeds-suggestions");
     const breedImage = document.getElementById("breed-image");
     const breedName = document.getElementById("breed-name");
+    const breedId = document.getElementById("breed-id");
     const breedOrigin = document.getElementById("breed-origin");
     const breedDescription = document.getElementById("breed-description");
     const breedWiki = document.getElementById("breed-wiki");
     const sliderDots = document.getElementById("slider-dots");
+    const leftButton = document.getElementById("left-button");
+    const rightButton = document.getElementById("right-button");
 
     const favoritesContainer = document.getElementById("favorites-container");
 
@@ -239,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         suggestion.addEventListener("click", () => {
                             breedsSearch.value = breed.name;
                             breedsSuggestions.style.display = "none";
-                            console.log("Selected breed from dropdown: ", breed.name);
+                            // console.log("Selected breed from dropdown: ", breed.name);
                             console.log("Selected breed id from dropdown: ", breed.id);
                             updateBreedDetails(breed);
                         });
@@ -257,6 +260,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Update text content
                 breedName.textContent = breed.name || "Unknown Breed";
+                breedId.textContent = breed.id || "Unknown Breed";
+                console.log("Breed id is:", breedId);
                 breedOrigin.textContent = breed.origin
                     ? `(${breed.origin})`
                     : "Origin not available";
@@ -287,6 +292,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function setupSlider(images, breedName) {
         let currentIndex = 0;
 
+        const placeholderImageUrl = "/static/images/placeholder2.gif"
+
         // Function to update the displayed image
         function showImage(index) {
             console.log("Show image function called");
@@ -311,6 +318,97 @@ document.addEventListener("DOMContentLoaded", function () {
                 sliderDots.appendChild(dot);
             });
         }
+
+        leftButton.onclick = async () => {
+            // Immediately set placeholder before doing any processing
+            breedImage.src = placeholderImageUrl;
+            breedImage.alt = "Loading...";
+        
+            console.log("Left button pressed");
+        
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = images.length - 1; // Loop to the last image
+            }
+        
+            // Show the next image
+            showImage(currentIndex);
+        };
+        
+        rightButton.onclick = async () => {
+            // Immediately set placeholder before doing any processing
+            breedImage.src = placeholderImageUrl;
+            breedImage.alt = "Loading...";
+        
+            console.log("Right button pressed");
+        
+            if (currentIndex < images.length - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // Loop back to the first image
+            }
+        
+            // Show the next image
+            showImage(currentIndex);
+        };
+
+        // Automatically slide images every 5 seconds
+        const autoSlideInterval = 3000; // Time in milliseconds
+        let autoSlide = setInterval(() => {
+            console.log("Auto-sliding to next image...");
+            if (currentIndex < images.length - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0; // Loop back to the first image
+            }
+            showImage(currentIndex);
+        }, autoSlideInterval);
+
+        // Pause auto-slide on mouse over and resume on mouse out
+        breedImage.addEventListener("mouseover", () => {
+            console.log("Paused auto-slide");
+            clearInterval(autoSlide);
+        });
+
+        breedImage.addEventListener("mouseout", () => {
+            console.log("Resumed auto-slide");
+            autoSlide = setInterval(() => {
+                console.log("Auto-sliding to next image...");
+                if (currentIndex < images.length - 1) {
+                    currentIndex++;
+                } else {
+                    currentIndex = 0; // Loop back to the first image
+                }
+                showImage(currentIndex);
+            }, autoSlideInterval);
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft") {
+                clearInterval(autoSlide);
+                console.log("Left arrow key pressed");
+                breedImage.src = placeholderImageUrl;
+                breedImage.alt = "Loading...";
+                if (currentIndex > 0) {
+                    currentIndex--;
+                } else {
+                    currentIndex = images.length - 1; // Loop to the last image
+                }
+                showImage(currentIndex);
+            } else if (event.key === "ArrowRight") {
+                console.log("Right arrow key pressed");
+                clearInterval(autoSlide);
+                breedImage.src = placeholderImageUrl;
+                breedImage.alt = "Loading...";
+                if (currentIndex < images.length - 1) {
+                    currentIndex++;
+                } else {
+                    currentIndex = 0; // Loop back to the first image
+                }
+                showImage(currentIndex);
+            }
+        });
 
         // Initialize the slider with the first image
         showImage(currentIndex);
