@@ -320,10 +320,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         leftButton.onclick = async () => {
-            // Immediately set placeholder before doing any processing
-            breedImage.src = placeholderImageUrl;
-            breedImage.alt = "Loading...";
-        
             console.log("Left button pressed");
         
             if (currentIndex > 0) {
@@ -337,10 +333,6 @@ document.addEventListener("DOMContentLoaded", function () {
         };
         
         rightButton.onclick = async () => {
-            // Immediately set placeholder before doing any processing
-            breedImage.src = placeholderImageUrl;
-            breedImage.alt = "Loading...";
-        
             console.log("Right button pressed");
         
             if (currentIndex < images.length - 1) {

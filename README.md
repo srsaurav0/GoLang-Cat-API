@@ -3,6 +3,8 @@ go version
 bee new cat-voting-app
 cd cat-voting-app
 
+cd GoLang-Cat-Api
+
 python3 -m venv .venv
 source .venv/bin/activate
 
@@ -55,3 +57,22 @@ go tool cover -html=coverage.out -o coverage.html
 
 # Open the HTML report (optional)
 open coverage.html
+
+https://github.com/srsaurav0/GoLang-Cat-API.git
+
+
+
+python -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.venv\Scripts\activate
+
+go get github.com/beego/beego/v2@v2.3.4
+go get github.com/beego/bee/v2@latest
+bee version
+
+bee run
+
+
+Windows:
+go test -coverprofile coverage.out ./...
+go tool cover -html coverage.out

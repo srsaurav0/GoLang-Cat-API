@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -54,40 +55,40 @@ func TestFetchCatImages(t *testing.T) {
 	}
 }
 
-// func TestAddToFavourites(t *testing.T) {
-//     payload := map[string]string{
-//         "image_id": "test-image-id", // Must not be empty
-//         "sub_id":   "user-123",
-//     }
-//     payloadBytes, err := json.Marshal(payload)
-//     if err != nil {
-//         t.Fatalf("Failed to marshal payload: %v", err)
-//     }
+func TestAddToFavourites(t *testing.T) {
+	payload := map[string]string{
+		"image_id": "test-image-id", // Must not be empty
+		"sub_id":   "user-123",
+	}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("Failed to marshal payload: %v", err)
+	}
 
-//     req := httptest.NewRequest("POST", "/api/add-to-favourites", bytes.NewReader(payloadBytes))
-//     req.Header.Set("Content-Type", "application/json")
+	req := httptest.NewRequest("POST", "/api/add-to-favourites", bytes.NewReader(payloadBytes))
+	req.Header.Set("Content-Type", "application/json")
 
-//     resp := httptest.NewRecorder()
+	resp := httptest.NewRecorder()
 
-//     controller := &controllers.CatController{}
-//     mockCtx := context.NewContext()
-//     mockCtx.Reset(req, resp)
-//     controller.Ctx = mockCtx
+	controller := &controllers.CatController{}
+	mockCtx := context.NewContext()
+	mockCtx.Reset(resp, req)
+	controller.Ctx = mockCtx
 
-//     controller.AddToFavourites()
+	controller.AddToFavourites()
 
-//     if resp.Code != http.StatusOK {
-//         t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
-//     }
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
+	}
 
-//     var responseBody map[string]interface{}
-//     err = json.Unmarshal(resp.Body.Bytes(), &responseBody)
-//     if err != nil {
-//         t.Fatalf("Failed to parse response body: %v", err)
-//     }
+	var responseBody map[string]interface{}
+	err = json.Unmarshal(resp.Body.Bytes(), &responseBody)
+	if err != nil {
+		t.Fatalf("Failed to parse response body: %v", err)
+	}
 
-//     t.Logf("Response: %v", responseBody)
-// }
+	t.Logf("Response: %v", responseBody)
+}
 
 // func TestAddToFavouritesError(t *testing.T) {
 // 	// Mock request body
@@ -205,3 +206,104 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	rec.Write(m.responseBody)
 	return rec.Result(), nil
 }
+
+// func TestVote(t *testing.T) {
+// 	// Mock vote response
+// 	voteResponse := map[string]interface{}{
+// 		"message":  "Vote submitted",
+// 		"image_id": "test-image-id",
+// 		"value":    1,
+// 	}
+// 	voteResponseBytes, _ := json.Marshal(voteResponse)
+
+// 	// Mock next image response
+// 	nextImageResponse := []map[string]interface{}{
+// 		{
+// 			"id":  "test-image-id",
+// 			"url": "https://example.com/image.jpg",
+// 		},
+// 	}
+// 	nextImageResponseBytes, _ := json.Marshal(nextImageResponse)
+
+// 	// Configure the mock transport
+// 	mockRoundTripFunc := func(req *http.Request) (*http.Response, error) {
+// 		rec := httptest.NewRecorder()
+
+// 		// Handle different API endpoints
+// 		if req.URL.Path == "/votes" {
+// 			rec.WriteHeader(http.StatusOK)
+// 			rec.Write(voteResponseBytes)
+// 		} else if req.URL.Path == "/images/search" {
+// 			rec.WriteHeader(http.StatusOK)
+// 			rec.Write(nextImageResponseBytes)
+// 		} else {
+// 			return nil, errors.New("unexpected API endpoint")
+// 		}
+
+// 		return rec.Result(), nil
+// 	}
+
+// 	// Inject mock transport into the HTTP client
+// 	client := &http.Client{
+// 		Transport: &mockTransport{roundTripFunc: mockRoundTripFunc},
+// 	}
+// 	http.DefaultClient = client // Replace the default client
+
+// 	// Mock request body
+// 	payload := map[string]interface{}{
+// 		"image_id": "test-image-id",
+// 		"sub_id":   "user-123",
+// 		"value":    1,
+// 	}
+// 	payloadBytes, _ := json.Marshal(payload)
+
+// 	// Mock HTTP request and response
+// 	req := httptest.NewRequest("POST", "/api/vote", bytes.NewReader(payloadBytes))
+// 	req.Header.Set("Content-Type", "application/json")
+// 	resp := httptest.NewRecorder()
+
+// 	// Mock context setup
+// 	mockCtx := &context.Context{
+// 		Request: req,
+// 		ResponseWriter: &context.Response{
+// 			ResponseWriter: resp,
+// 		},
+// 		Input:  &context.BeegoInput{},
+// 		Output: &context.BeegoOutput{},
+// 	}
+
+// 	// Initialize the controller
+
+// 	controller := &controllers.CatController{}
+// 	controller.Ctx = mockCtx
+
+// 	// Ensure controller.Data is not nil
+// 	if controller.Data == nil {
+// 		controller.Data = make(map[interface{}]interface{})
+// 	}
+
+// 	// Call the controller method
+// 	controller.Vote()
+
+// 	// Validate the response
+// 	if resp.Code != http.StatusOK {
+// 		t.Fatalf("Expected status 200, got %d", resp.Code)
+// 	}
+
+// 	var responseBody map[string]interface{}
+// 	err := json.Unmarshal(resp.Body.Bytes(), &responseBody)
+// 	if err != nil {
+// 		t.Fatalf("Failed to parse response: %v", err)
+// 	}
+
+// 	// Validate response structure
+// 	if _, ok := responseBody["message"]; !ok {
+// 		t.Errorf("Expected 'message' field, got: %v", responseBody)
+// 	}
+// 	if _, ok := responseBody["vote"]; !ok {
+// 		t.Errorf("Expected 'vote' field, got: %v", responseBody)
+// 	}
+// 	if _, ok := responseBody["next_image"]; !ok {
+// 		t.Errorf("Expected 'next_image' field, got: %v", responseBody)
+// 	}
+// }

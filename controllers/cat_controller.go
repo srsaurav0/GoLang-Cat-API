@@ -309,6 +309,10 @@ func (c *CatController) FetchBreeds() {
 // }
 
 func (c *CatController) AddToFavourites() {
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
+
 	baseURL, _ := web.AppConfig.String("catapi_base_url")
 	apiKey, _ := web.AppConfig.String("catapi_key")
 
@@ -557,6 +561,10 @@ func (c *CatController) RemoveFavourite() {
 }
 
 func (c *CatController) Vote() {
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
+
 	baseURL, _ := web.AppConfig.String("catapi_base_url")
 	apiKey, _ := web.AppConfig.String("catapi_key")
 
