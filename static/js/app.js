@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let favorites = [];
     let currentImage;
+    let autoSlide;
 
     // Function to set active tab styles and display appropriate sections
     function setActiveTab(tabId) {
@@ -291,9 +292,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function setupSlider(images, breedName) {
         let currentIndex = 0;
-
-        const placeholderImageUrl = "/static/images/placeholder2.gif"
-
+    
+        const placeholderImageUrl = "/static/images/placeholder2.gif";
+    
+        // Clear any existing autoSlide interval
+        if (autoSlide) {
+            clearInterval(autoSlide);
+        }
+    
         // Function to update the displayed image
         function showImage(index) {
             console.log("Show image function called");
@@ -302,7 +308,7 @@ document.addEventListener("DOMContentLoaded", function () {
             breedImage.alt = `${breedName} Image ${index + 1}`;
             updateDots(index);
         }
-
+    
         // Function to update the dots for the slider
         function updateDots(index) {
             console.log("Dots updated");
@@ -318,37 +324,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 sliderDots.appendChild(dot);
             });
         }
-
-        leftButton.onclick = async () => {
-            console.log("Left button pressed");
-        
+    
+        leftButton.onclick = () => {
             if (currentIndex > 0) {
                 currentIndex--;
             } else {
                 currentIndex = images.length - 1; // Loop to the last image
             }
-        
-            // Show the next image
             showImage(currentIndex);
         };
-        
-        rightButton.onclick = async () => {
-            console.log("Right button pressed");
-        
+    
+        rightButton.onclick = () => {
             if (currentIndex < images.length - 1) {
                 currentIndex++;
             } else {
                 currentIndex = 0; // Loop back to the first image
             }
-        
-            // Show the next image
             showImage(currentIndex);
         };
-
+    
         // Automatically slide images every 5 seconds
         const autoSlideInterval = 3000; // Time in milliseconds
-        let autoSlide = setInterval(() => {
-            console.log("Auto-sliding to next image...");
+        autoSlide = setInterval(() => {
             if (currentIndex < images.length - 1) {
                 currentIndex++;
             } else {
@@ -356,17 +353,14 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             showImage(currentIndex);
         }, autoSlideInterval);
-
+    
         // Pause auto-slide on mouse over and resume on mouse out
         breedImage.addEventListener("mouseover", () => {
-            console.log("Paused auto-slide");
             clearInterval(autoSlide);
         });
-
+    
         breedImage.addEventListener("mouseout", () => {
-            console.log("Resumed auto-slide");
             autoSlide = setInterval(() => {
-                console.log("Auto-sliding to next image...");
                 if (currentIndex < images.length - 1) {
                     currentIndex++;
                 } else {
@@ -375,13 +369,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 showImage(currentIndex);
             }, autoSlideInterval);
         });
-
+    
         document.addEventListener("keydown", (event) => {
             if (event.key === "ArrowLeft") {
                 clearInterval(autoSlide);
-                console.log("Left arrow key pressed");
-                breedImage.src = placeholderImageUrl;
-                breedImage.alt = "Loading...";
                 if (currentIndex > 0) {
                     currentIndex--;
                 } else {
@@ -389,10 +380,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 showImage(currentIndex);
             } else if (event.key === "ArrowRight") {
-                console.log("Right arrow key pressed");
                 clearInterval(autoSlide);
-                breedImage.src = placeholderImageUrl;
-                breedImage.alt = "Loading...";
                 if (currentIndex < images.length - 1) {
                     currentIndex++;
                 } else {
@@ -401,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 showImage(currentIndex);
             }
         });
-
+    
         // Initialize the slider with the first image
         showImage(currentIndex);
     }
