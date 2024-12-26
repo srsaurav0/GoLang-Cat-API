@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -16,6 +15,149 @@ import (
 	"github.com/beego/beego/v2/server/web"
 	"github.com/beego/beego/v2/server/web/context"
 )
+
+func init() {
+	// Initialize Beego configuration with mock values
+	err := web.AppConfig.Set("catapi_base_url", "http://default-test-url")
+	if err != nil {
+		panic("Failed to set default test config: " + err.Error())
+	}
+	err = web.AppConfig.Set("catapi_key", "default-test-key")
+	if err != nil {
+		panic("Failed to set default test config: " + err.Error())
+	}
+}
+
+func setupTest(url string) (*controllers.CatController, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest("GET", url, nil)
+	recorder := httptest.NewRecorder()
+
+	beegoCtx := &context.Context{
+		Input:  context.NewInput(),
+		Output: context.NewOutput(),
+	}
+	beegoCtx.Reset(recorder, req)
+
+	controller := &controllers.CatController{}
+	controller.Init(beegoCtx, "CatController", "FetchCatImages", nil)
+
+	return controller, recorder
+}
+
+// Mock HTTP server to simulate Cat API responses
+func setupMockServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("x-api-key") != "test_api_key" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		mockBreeds := []map[string]interface{}{
+			{
+				"id":   "abys",
+				"name": "Abyssinian",
+			},
+			{
+				"id":   "beng",
+				"name": "Bengal",
+			},
+		}
+		json.NewEncoder(w).Encode(mockBreeds)
+	}))
+}
+
+func setupBreedTest(t *testing.T) (*controllers.CatController, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest("GET", "/api/breeds", nil)
+	recorder := httptest.NewRecorder()
+
+	beegoCtx := &context.Context{
+		Input:  context.NewInput(),
+		Output: context.NewOutput(),
+	}
+	beegoCtx.Reset(recorder, req)
+
+	controller := &controllers.CatController{}
+	controller.Init(beegoCtx, "CatController", "FetchBreeds", nil)
+
+	return controller, recorder
+}
+
+func setConfig(baseURL, apiKey string) error {
+	if err := web.AppConfig.Set("catapi_base_url", baseURL); err != nil {
+		return err
+	}
+	if err := web.AppConfig.Set("catapi_key", apiKey); err != nil {
+		return err
+	}
+	return nil
+}
+
+func clearBreedConfig() {
+	web.AppConfig.Set("catapi_base_url", "")
+	web.AppConfig.Set("catapi_key", "")
+}
+
+func TestFetchCatImages_FetchError(t *testing.T) {
+	controller, recorder := setupTest("/api/cats?breed_id=abc123")
+
+	// Set invalid base URL to trigger fetch error
+	_ = web.AppConfig.Set("catapi_base_url", "http://invalid-url-that-will-fail")
+	_ = web.AppConfig.Set("catapi_key", "test_api_key")
+
+	controller.FetchCatImages()
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status code 500, but got %d", recorder.Code)
+	}
+
+	// Check if response is JSON and contains error message
+	contentType := recorder.Header().Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("Expected Content-Type to be application/json, but got %s", contentType)
+	}
+
+	responseBody := recorder.Body.String()
+	if !strings.Contains(responseBody, "error") {
+		t.Errorf("Expected error message in response body, but got: %s", responseBody)
+	}
+}
+
+func TestFetchBreeds_Success(t *testing.T) {
+	// Start mock server
+	mockServer := setupMockServer()
+	defer mockServer.Close()
+
+	controller, recorder := setupBreedTest(t)
+
+	// Set up valid configuration
+	clearBreedConfig()
+	web.AppConfig.Set("catapi_base_url", mockServer.URL)
+	web.AppConfig.Set("catapi_key", "test_api_key")
+
+	// Call the controller method
+	controller.FetchBreeds()
+
+	// Check status code
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Expected status code 200, but got %d", recorder.Code)
+	}
+
+	// Verify response is JSON
+	contentType := recorder.Header().Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("Expected Content-Type to be application/json, but got %s", contentType)
+	}
+
+	// Verify response contains breeds
+	var breeds []map[string]interface{}
+	if err := json.NewDecoder(recorder.Body).Decode(&breeds); err != nil {
+		t.Errorf("Failed to decode response body: %v", err)
+	}
+
+	if len(breeds) != 2 {
+		t.Errorf("Expected 2 breeds, but got %d", len(breeds))
+	}
+}
 
 func TestFetchCatImages(t *testing.T) {
 	// Create a mock HTTP request
@@ -56,227 +198,6 @@ func TestFetchCatImages(t *testing.T) {
 		t.Errorf("Expected response body, but got empty")
 	}
 }
-
-// type MockConfig struct {
-// 	data map[string]string
-// }
-
-// func (m *MockConfig) String(key string) (string, error) {
-// 	val, ok := m.data[key]
-// 	if !ok {
-// 		return "", fmt.Errorf("missing config key: %s", key)
-// 	}
-// 	return val, nil
-// }
-
-// func (m *MockConfig) Int(key string) (int, error) {
-// 	return 0, nil // Example for integer configuration
-// }
-
-// func TestFetchCatImages_MissingBaseURL(t *testing.T) {
-// 	// Backup the original AppConfig
-// 	originalAppConfig := web.AppConfig
-// 	defer func() { web.AppConfig = originalAppConfig }() // Restore after test
-
-// 	// Mock configuration
-// 	mockConfig := &MockConfig{
-// 		data: map[string]string{
-// 			// "catapi_base_url": "", // Simulate missing key
-// 			"catapi_key": "test_api_key",
-// 		},
-// 	}
-
-// 	// Use reflection to replace web.AppConfig
-// 	v := reflect.ValueOf(&web.AppConfig).Elem()
-// 	v.Set(reflect.ValueOf(mockConfig))
-
-// 	// Create a mock HTTP request
-// 	req := httptest.NewRequest("GET", "/api/cats?breed_id=abc123", nil)
-// 	recorder := httptest.NewRecorder()
-
-// 	// Initialize the Beego context
-// 	beegoCtx := &context.Context{
-// 		Input:  context.NewInput(),
-// 		Output: context.NewOutput(),
-// 	}
-// 	beegoCtx.Reset(recorder, req)
-
-// 	// Set up the CatController
-// 	controller := &controllers.CatController{}
-// 	controller.Init(beegoCtx, "CatController", "FetchCatImages", nil)
-
-// 	// Call the FetchCatImages method
-// 	controller.FetchCatImages()
-
-// 	// Validate the response
-// 	if recorder.Code != http.StatusInternalServerError {
-// 		t.Errorf("Expected status code 500, but got %d", recorder.Code)
-// 	}
-
-// 	expectedMessage := "Failed to load Cat API base URL from config"
-// 	if !strings.Contains(recorder.Body.String(), expectedMessage) {
-// 		t.Errorf("Expected error message '%s', but got '%s'", expectedMessage, recorder.Body.String())
-// 	}
-// }
-
-type MockConfig struct {
-	data map[string]string
-}
-
-func (m *MockConfig) Set(key, val string) error {
-	m.data[key] = val
-	return nil
-}
-
-func (m *MockConfig) String(key string) string {
-	return m.data[key]
-}
-
-func (m *MockConfig) Strings(key string) []string {
-	return []string{m.data[key]}
-}
-
-func (m *MockConfig) Int(key string) (int, error) {
-	if val, ok := m.data[key]; ok {
-		return strconv.Atoi(val)
-	}
-	return 0, nil
-}
-
-func (m *MockConfig) Int64(key string) (int64, error) {
-	if val, ok := m.data[key]; ok {
-		return strconv.ParseInt(val, 10, 64)
-	}
-	return 0, nil
-}
-
-func (m *MockConfig) Bool(key string) (bool, error) {
-	if val, ok := m.data[key]; ok {
-		return strconv.ParseBool(val)
-	}
-	return false, nil
-}
-
-func (m *MockConfig) Float(key string) (float64, error) {
-	if val, ok := m.data[key]; ok {
-		return strconv.ParseFloat(val, 64)
-	}
-	return 0.0, nil
-}
-
-func (m *MockConfig) DefaultString(key, defaultVal string) string {
-	if val, ok := m.data[key]; ok {
-		return val
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DefaultStrings(key string, defaultVal []string) []string {
-	if val, ok := m.data[key]; ok && val != "" {
-		return []string{val}
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DefaultInt(key string, defaultVal int) int {
-	if val, ok := m.data[key]; ok {
-		intVal, err := strconv.Atoi(val)
-		if err == nil {
-			return intVal
-		}
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DefaultInt64(key string, defaultVal int64) int64 {
-	if val, ok := m.data[key]; ok {
-		int64Val, err := strconv.ParseInt(val, 10, 64)
-		if err == nil {
-			return int64Val
-		}
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DefaultBool(key string, defaultVal bool) bool {
-	if val, ok := m.data[key]; ok {
-		boolVal, err := strconv.ParseBool(val)
-		if err == nil {
-			return boolVal
-		}
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DefaultFloat(key string, defaultVal float64) float64 {
-	if val, ok := m.data[key]; ok {
-		floatVal, err := strconv.ParseFloat(val, 64)
-		if err == nil {
-			return floatVal
-		}
-	}
-	return defaultVal
-}
-
-func (m *MockConfig) DIY(key string) (interface{}, error) {
-	if val, ok := m.data[key]; ok {
-		return val, nil
-	}
-	return nil, nil
-}
-
-func (m *MockConfig) GetSection(section string) (map[string]string, error) {
-	return m.data, nil
-}
-
-func (m *MockConfig) SaveConfigFile(filename string) error {
-	return nil
-}
-
-// func TestFetchCatImages_ConfigError(t *testing.T) {
-// 	// Backup the original AppConfig and restore it after the test
-// 	originalAppConfig := web.AppConfig
-// 	defer func() { web.AppConfig = originalAppConfig }()
-
-// 	// Mock configuration to simulate an error
-// 	mockConfig := &MockConfig{
-// 		data: map[string]string{
-// 			"catapi_base_url": "", // Simulate missing configuration key
-// 			"catapi_key":      "test_api_key",
-// 		},
-// 	}
-// 	web.AppConfig = config.Configer(mockConfig) // Cast MockConfig to Configer interface
-
-// 	// Create a mock HTTP request
-// 	req := httptest.NewRequest("GET", "/api/cats?breed_id=abc123", nil)
-// 	recorder := httptest.NewRecorder()
-
-// 	// Initialize the Beego context
-// 	beegoCtx := &context.Context{
-// 		Input:  context.NewInput(),
-// 		Output: context.NewOutput(),
-// 	}
-// 	beegoCtx.Reset(recorder, req)
-
-// 	// Set up the CatController
-// 	controller := &controllers.CatController{}
-// 	controller.Init(beegoCtx, "CatController", "FetchCatImages", nil)
-
-// 	// Call the FetchCatImages method
-// 	controller.FetchCatImages()
-
-// 	// Validate the response
-// 	if recorder.Code != http.StatusInternalServerError {
-// 		t.Errorf("Expected status code 500, but got %d", recorder.Code)
-// 	}
-
-// 	expectedError := "Failed to load Cat API base URL from config"
-// 	if !strings.Contains(recorder.Body.String(), expectedError) {
-// 		t.Errorf("Expected error message '%s', but got '%s'", expectedError, recorder.Body.String())
-// 	}
-
-// 	t.Logf("Error response: %s", recorder.Body.String())
-// }
 
 func TestAddToFavourites(t *testing.T) {
 	payload := map[string]string{
@@ -504,29 +425,11 @@ func TestVote(t *testing.T) {
 	// Execute the controller method
 	controller.Vote()
 
-	// // Validate response
-	// if resp.Code != http.StatusOK {
-	// 	t.Errorf("Expected status code %d, got %d", http.StatusOK, resp.Code)
-	// }
-
 	// // Parse and validate response body
 	var responseBody map[string]interface{}
 	if err := json.Unmarshal(resp.Body.Bytes(), &responseBody); err != nil {
 		t.Fatalf("Failed to parse response body: %v", err)
 	}
-
-	// // Validate response fields
-	// if responseBody["message"] != "Vote submitted and next image fetched" {
-	// 	t.Errorf("Unexpected message in response: %v", responseBody["message"])
-	// }
-
-	// if _, ok := responseBody["vote"]; !ok {
-	// 	t.Errorf("Missing 'vote' field in response: %v", responseBody)
-	// }
-
-	// if _, ok := responseBody["next_image"]; !ok {
-	// 	t.Errorf("Missing 'next_image' field in response: %v", responseBody)
-	// }
 
 	t.Logf("Response: %v", responseBody)
 }
