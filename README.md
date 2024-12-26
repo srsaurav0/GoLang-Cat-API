@@ -35,8 +35,10 @@ The Cat Voting API is a Go-based application built using the Beego framework. It
 
 - Go 1.19+
   - Run `go version` to check if Go is installed in your system. If not, then install it and after that, go forward.
+  - In Windows, ensure that **GOROOT** is added in the environment variables.
 - Beego v2.3.4
   - Run `bee version` to check if Beego is installed in your system. If not, then install it and after that, go forward.
+  - Instructions are provided in the [Beego Setup](#beego-setup) section for Beego Installation.
 - The Cat API key (obtain from [The Cat API](https://thecatapi.com/))
 
 ---
@@ -62,10 +64,36 @@ cd GoLang-Cat-API
   .venv\Scripts\activate
   ```
 
+### Beego Setup
+- **For Linux**:
+  - Download Beego
+    ```bash
+    go get github.com/beego/beego/v2@v2.3.4
+    go get github.com/beego/bee/v2@latest
+    ```
+  - Set Path
+    ```bash
+    go env GOPATH
+    export PATH=$PATH:$(go env GOPATH)/bin
+    echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
+    ```
+  - Check if installed successfully
+    ```bash
+    bee version
+    ```
+-**For Windows**:
+  - Download Beego
+    ```bash
+    go get github.com/beego/beego/v2@v2.3.4
+    go get github.com/beego/bee/v2@latest
+    ```
+  - Check if installed successfully
+    ```bash
+    bee version
+    ```
+
 ### Install Dependencies
 ```bash
-go get github.com/beego/beego/v2@v2.3.4
-go get github.com/beego/bee/v2@latest
 go mod tidy
 ```
 
