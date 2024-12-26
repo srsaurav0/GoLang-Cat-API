@@ -33,6 +33,9 @@ type FavouriteRequest struct {
 
 // FetchCatImages handles the request to fetch random cat images
 func (c *CatController) FetchCatImages() {
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
 	baseURL, err := web.AppConfig.String("catapi_base_url")
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)

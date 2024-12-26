@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">cat-voting-app/controllers/cat_controller.go (53.1%)</option>
+				<option value="file0">cat-voting-app/controllers/cat_controller.go (73.4%)</option>
 				
 				<option value="file1">cat-voting-app/controllers/default.go (100.0%)</option>
 				
@@ -92,6 +92,7 @@ import (
 // CatController handles API requests
 type CatController struct {
         web.Controller
+        HTTPClient *http.Client
 }
 
 // Structs to unmarshal Cat API responses
@@ -109,7 +110,10 @@ type FavouriteRequest struct {
 
 // FetchCatImages handles the request to fetch random cat images
 func (c *CatController) FetchCatImages() <span class="cov8" title="1">{
-        baseURL, err := web.AppConfig.String("catapi_base_url")
+        if c.Data == nil </span><span class="cov0" title="0">{
+                c.Data = make(map[interface{}]interface{})
+        }</span>
+        <span class="cov8" title="1">baseURL, err := web.AppConfig.String("catapi_base_url")
         if err != nil </span><span class="cov0" title="0">{
                 c.Ctx.Output.SetStatus(500)
                 c.Ctx.WriteString("Failed to load Cat API base URL from config")
@@ -385,18 +389,25 @@ func (c *CatController) FetchBreeds() <span class="cov8" title="1">{
 // }
 
 func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
-        baseURL, _ := web.AppConfig.String("catapi_base_url")
+        if c.Data == nil </span><span class="cov8" title="1">{
+                c.Data = make(map[interface{}]interface{})
+        }</span>
+
+        <span class="cov8" title="1">baseURL, _ := web.AppConfig.String("catapi_base_url")
         apiKey, _ := web.AppConfig.String("catapi_key")
 
         // Read the raw body
         rawBody, err := io.ReadAll(c.Ctx.Request.Body)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="1">{
                 fmt.Println("Error reading request body:", err)
-                c.Ctx.Output.SetStatus(400)
+                if c.Data == nil </span><span class="cov0" title="0">{
+                        c.Data = make(map[interface{}]interface{}) // Initialize if nil
+                }</span>
+                <span class="cov8" title="1">c.Ctx.Output.SetStatus(400)
                 c.Data["json"] = map[string]string{"error": "Failed to read request body"}
                 c.ServeJSON()
-                return
-        }</span>
+                return</span>
+        }
         <span class="cov8" title="1">fmt.Println("Raw request body:", string(rawBody)) // Log the raw request body for debugging
 
         // Parse the request body into a struct
@@ -411,7 +422,7 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
                 c.ServeJSON()
                 return
         }</span>
-        <span class="cov0" title="0">fmt.Println("Parsed request body:", reqBody)
+        <span class="cov8" title="1">fmt.Println("Parsed request body:", reqBody)
 
         // Channels to handle tasks
         addToFavoritesChan := make(chan error, 1)             // Buffered channel to avoid blocking
@@ -423,22 +434,22 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
 
         // Task 1: Add image to favorites
         wg.Add(1)
-        go func() </span><span class="cov0" title="0">{
+        go func() </span><span class="cov8" title="1">{
                 defer wg.Done()
                 err := addToFavorites(baseURL, apiKey, reqBody.ImageID, reqBody.SubID)
                 addToFavoritesChan &lt;- err // Send result to channel
         }</span>()
 
         // Task 2: Fetch the next image
-        <span class="cov0" title="0">wg.Add(1)
-        go func() </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">wg.Add(1)
+        go func() </span><span class="cov8" title="1">{
                 defer wg.Done()
                 images, err := fetchCatImages(baseURL, apiKey, "")
                 if err != nil </span><span class="cov0" title="0">{
                         errorChan &lt;- err
                         return
                 }</span>
-                <span class="cov0" title="0">if len(images) &gt; 0 </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if len(images) &gt; 0 </span><span class="cov8" title="1">{
                         nextImageChan &lt;- images[0] // Send the first image to the channel
                 }</span> else<span class="cov0" title="0"> {
                         errorChan &lt;- fmt.Errorf("No images available")
@@ -446,7 +457,7 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
         }()
 
         // Close channels after all goroutines are done
-        <span class="cov0" title="0">go func() </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">go func() </span><span class="cov8" title="1">{
                 wg.Wait()
                 close(addToFavoritesChan)
                 close(nextImageChan)
@@ -454,39 +465,39 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
         }</span>()
 
         // Aggregate results
-        <span class="cov0" title="0">var addToFavoritesErr error
+        <span class="cov8" title="1">var addToFavoritesErr error
         var nextImage map[string]interface{}
         var errors []error
 
-        for </span><span class="cov0" title="0">{
+        for </span><span class="cov8" title="1">{
                 select </span>{
-                case err, ok := &lt;-addToFavoritesChan:<span class="cov0" title="0">
-                        if ok </span><span class="cov0" title="0">{
+                case err, ok := &lt;-addToFavoritesChan:<span class="cov8" title="1">
+                        if ok </span><span class="cov8" title="1">{
                                 addToFavoritesErr = err
-                        }</span> else<span class="cov0" title="0"> {
+                        }</span> else<span class="cov8" title="1"> {
                                 addToFavoritesChan = nil
                         }</span>
-                case img, ok := &lt;-nextImageChan:<span class="cov0" title="0">
-                        if ok </span><span class="cov0" title="0">{
+                case img, ok := &lt;-nextImageChan:<span class="cov8" title="1">
+                        if ok </span><span class="cov8" title="1">{
                                 nextImage = img
-                        }</span> else<span class="cov0" title="0"> {
+                        }</span> else<span class="cov8" title="1"> {
                                 nextImageChan = nil
                         }</span>
-                case err, ok := &lt;-errorChan:<span class="cov0" title="0">
+                case err, ok := &lt;-errorChan:<span class="cov8" title="1">
                         if ok </span><span class="cov0" title="0">{
                                 errors = append(errors, err)
-                        }</span> else<span class="cov0" title="0"> {
+                        }</span> else<span class="cov8" title="1"> {
                                 errorChan = nil
                         }</span>
                 }
 
                 // Break when all channels are closed
-                <span class="cov0" title="0">if addToFavoritesChan == nil &amp;&amp; nextImageChan == nil &amp;&amp; errorChan == nil </span><span class="cov0" title="0">{
+                <span class="cov8" title="1">if addToFavoritesChan == nil &amp;&amp; nextImageChan == nil &amp;&amp; errorChan == nil </span><span class="cov8" title="1">{
                         break</span>
                 }
         }
 
-        <span class="cov0" title="0">fmt.Println("Mark!:", nextImage)
+        <span class="cov8" title="1">fmt.Println("Mark!:", nextImage)
 
         // Handle errors
         if len(errors) &gt; 0 </span><span class="cov0" title="0">{
@@ -500,7 +511,7 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
         }</span>
 
         // Return success with the next image
-        <span class="cov0" title="0">c.Data["json"] = map[string]interface{}{
+        <span class="cov8" title="1">c.Data["json"] = map[string]interface{}{
                 "message":          "Image added to favorites and next image fetched",
                 "next_image":       nextImage,
                 "add_to_favorites": addToFavoritesErr == nil,
@@ -508,7 +519,7 @@ func (c *CatController) AddToFavourites() <span class="cov8" title="1">{
         c.ServeJSON()</span>
 }
 
-func addToFavorites(baseURL, apiKey, imageID, subID string) error <span class="cov0" title="0">{
+func addToFavorites(baseURL, apiKey, imageID, subID string) error <span class="cov8" title="1">{
         client := &amp;http.Client{}
         payload := map[string]string{
                 "image_id": imageID,
@@ -523,9 +534,9 @@ func addToFavorites(baseURL, apiKey, imageID, subID string) error <span class="c
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("Error adding to favorites: %w", err)
         }</span>
-        <span class="cov0" title="0">defer resp.Body.Close()
+        <span class="cov8" title="1">defer resp.Body.Close()
 
-        if resp.StatusCode != http.StatusOK </span><span class="cov0" title="0">{
+        if resp.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
                 return fmt.Errorf("Failed to add to favorites: %s", resp.Status)
         }</span>
         <span class="cov0" title="0">return nil</span>
@@ -569,18 +580,26 @@ func fetchCatImages(baseURL, apiKey, breedID string) ([]map[string]interface{}, 
 }
 
 func (c *CatController) GetFavourites() <span class="cov8" title="1">{
-        baseURL, _ := web.AppConfig.String("catapi_base_url")
+        if c.Data == nil </span><span class="cov8" title="1">{
+                c.Data = make(map[interface{}]interface{})
+        }</span>
+
+        <span class="cov8" title="1">baseURL, _ := web.AppConfig.String("catapi_base_url")
         apiKey, _ := web.AppConfig.String("catapi_key")
 
         subID := c.GetString("sub_id") // Get user ID from query string
 
         requestURL := baseURL + "/favourites"
-        if subID != "" </span><span class="cov0" title="0">{
+        if subID != "" </span><span class="cov8" title="1">{
                 requestURL += "?sub_id=" + subID
         }</span>
 
-        <span class="cov8" title="1">client := &amp;http.Client{}
-        req, _ := http.NewRequest("GET", requestURL, nil)
+        <span class="cov8" title="1">client := c.HTTPClient // Use the injected HTTP client
+        if client == nil </span><span class="cov8" title="1">{
+                client = &amp;http.Client{} // Fallback to default if not injected
+        }</span>
+
+        <span class="cov8" title="1">req, _ := http.NewRequest("GET", requestURL, nil)
         req.Header.Set("x-api-key", apiKey)
 
         resp, err := client.Do(req)
@@ -622,7 +641,11 @@ func (c *CatController) RemoveFavourite() <span class="cov8" title="1">{
 }
 
 func (c *CatController) Vote() <span class="cov8" title="1">{
-        baseURL, _ := web.AppConfig.String("catapi_base_url")
+        if c.Data == nil </span><span class="cov8" title="1">{
+                c.Data = make(map[interface{}]interface{})
+        }</span>
+
+        <span class="cov8" title="1">baseURL, _ := web.AppConfig.String("catapi_base_url")
         apiKey, _ := web.AppConfig.String("catapi_key")
 
         // Read and parse the request body
@@ -819,13 +842,6 @@ func (c *CatController) GetVotes() <span class="cov8" title="1">{
 		<pre class="file" id="file1" style="display: none">package controllers
 
 import (
-        // "encoding/json"
-        // "fmt"
-        // "net/http"
-        // "sync"
-        // "time"
-
-        // "github.com/beego/beego/v2/server/web"
         beego "github.com/beego/beego/v2/server/web"
 )
 
@@ -836,168 +852,6 @@ type MainController struct {
 func (c *MainController) Get() <span class="cov8" title="1">{
         c.TplName = "index.tpl"
 }</span>
-
-// func (c *MainController) HomePage() {
-//         baseURL, _ := web.AppConfig.String("catapi_base_url")
-//         apiKey, _ := web.AppConfig.String("catapi_key")
-
-//         // Channels for concurrent fetching
-//         imagesChan := make(chan []map[string]interface{})
-//         breedsChan := make(chan []map[string]interface{})
-//         favoritesChan := make(chan []map[string]interface{})
-//         errorChan := make(chan error, 3)
-
-//         // WaitGroup to wait for all goroutines
-//         var wg sync.WaitGroup
-
-//         // Fetch cat images
-//         wg.Add(1)
-//         go func() {
-//                 defer wg.Done()
-//                 fmt.Println("Fetching images: Started at", time.Now())
-//                 client := &amp;http.Client{}
-//                 req, _ := http.NewRequest("GET", fmt.Sprintf("%s/images/search?limit=10", baseURL), nil)
-//                 req.Header.Set("x-api-key", apiKey)
-
-//                 resp, err := client.Do(req)
-//                 if err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error fetching images: %w", err)
-//                         return
-//                 }
-//                 defer resp.Body.Close()
-
-//                 var images []map[string]interface{}
-//                 if err := json.NewDecoder(resp.Body).Decode(&amp;images); err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error parsing images response: %w", err)
-//                         return
-//                 }
-//                 fmt.Println("Fetching images: Completed at", time.Now())
-//                 imagesChan &lt;- images
-//         }()
-
-//         // Fetch breeds
-//         wg.Add(1)
-//         go func() {
-//                 defer wg.Done()
-//                 fmt.Println("Fetching breeds: Started at", time.Now())
-//                 client := &amp;http.Client{}
-//                 req, _ := http.NewRequest("GET", fmt.Sprintf("%s/breeds", baseURL), nil)
-//                 req.Header.Set("x-api-key", apiKey)
-
-//                 resp, err := client.Do(req)
-//                 if err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error fetching breeds: %w", err)
-//                         return
-//                 }
-//                 defer resp.Body.Close()
-
-//                 var breeds []map[string]interface{}
-//                 if err := json.NewDecoder(resp.Body).Decode(&amp;breeds); err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error parsing breeds response: %w", err)
-//                         return
-//                 }
-//                 fmt.Println("Fetching breeds: Completed at", time.Now())
-//                 breedsChan &lt;- breeds
-//         }()
-
-//         // Fetch favorites
-//         wg.Add(1)
-//         go func() {
-//                 defer wg.Done()
-//                 fmt.Println("Fetching favorites: Started at", time.Now())
-//                 client := &amp;http.Client{}
-//                 req, _ := http.NewRequest("GET", fmt.Sprintf("%s/favourites?sub_id=user-123", baseURL), nil)
-//                 req.Header.Set("x-api-key", apiKey)
-
-//                 resp, err := client.Do(req)
-//                 if err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error fetching favorites: %w", err)
-//                         return
-//                 }
-//                 defer resp.Body.Close()
-
-//                 var favorites []map[string]interface{}
-//                 if err := json.NewDecoder(resp.Body).Decode(&amp;favorites); err != nil {
-//                         errorChan &lt;- fmt.Errorf("Error parsing favorites response: %w", err)
-//                         return
-//                 }
-//                 fmt.Println("Fetching favorites: Completed at", time.Now())
-//                 favoritesChan &lt;- favorites
-//         }()
-
-//         // Wait for all goroutines to complete
-//         go func() {
-//                 wg.Wait()
-//                 close(imagesChan)
-//                 close(breedsChan)
-//                 close(favoritesChan)
-//                 close(errorChan)
-//         }()
-
-//         // Aggregate results
-//         var images []map[string]interface{}
-//         var breeds []map[string]interface{}
-//         var favorites []map[string]interface{}
-//         errors := []error{}
-
-//         for {
-//                 select {
-//                 case img, ok := &lt;-imagesChan:
-//                         if ok {
-//                                 images = img
-//                                 fmt.Println("Images fetched:", time.Now())
-//                         } else {
-//                                 imagesChan = nil // Set to nil when channel is closed
-//                         }
-//                 case brd, ok := &lt;-breedsChan:
-//                         if ok {
-//                                 breeds = brd
-//                                 fmt.Println("Breeds fetched:", time.Now())
-//                         } else {
-//                                 breedsChan = nil // Set to nil when channel is closed
-//                         }
-//                 case fav, ok := &lt;-favoritesChan:
-//                         if ok {
-//                                 favorites = fav
-//                                 fmt.Println("Favorites fetched:", time.Now())
-//                         } else {
-//                                 favoritesChan = nil // Set to nil when channel is closed
-//                         }
-//                 case err, ok := &lt;-errorChan:
-//                         if ok {
-//                                 errors = append(errors, err)
-//                                 fmt.Println("Error occurred:", time.Now(), err)
-//                         } else {
-//                                 errorChan = nil // Set to nil when channel is closed
-//                         }
-//                 }
-
-//                 // Break when all channels are closed
-//                 if imagesChan == nil &amp;&amp; breedsChan == nil &amp;&amp; favoritesChan == nil &amp;&amp; errorChan == nil {
-//                         break
-//                 }
-//         }
-
-//         fmt.Println("Check1", time.Now())
-//         // Check for errors
-//         if len(errors) &gt; 0 {
-//                 for _, err := range errors {
-//                         fmt.Println("Error:", err)
-//                 }
-//                 c.Ctx.Output.SetStatus(500)
-//                 c.Data["json"] = map[string]string{"error": "Failed to fetch some data"}
-//                 c.ServeJSON()
-//                 return
-//         }
-
-//         // Pass data to the template
-//         c.Data["images"] = images
-//         c.Data["breeds"] = breeds
-//         c.Data["favorites"] = favorites
-
-//         // Render index.tpl
-//         c.TplName = "index.tpl"
-// }
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package main
