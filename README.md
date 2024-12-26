@@ -89,7 +89,7 @@ Access the application at [http://localhost:8080](http://localhost:8080).
 ## Project Structure
 
 ```plaintext
-cat-voting-api/
+GoLang-Cat-API/
 ├── conf/                  # Configuration files
 │   └── app.conf           # Main configuration file
 ├── controllers/           # Beego controllers
@@ -121,9 +121,11 @@ cat-voting-api/
 ### Voting
 When the http://localhost:8080 is accessed, initially the **Voting** tab is loaded. It uses the /api/cats API for fetching a random cat image. While the fetching of the image is executed, a placeholder gif is used for better user experience.
 There are 2 functionalities in this page:
-1. **Add to Favorites**: When the ***heart button*** is pressed, the displayed image is added to the favorites by using the image-id and sub-id. Meanwhile, another image is fetched. This two activities are done concurrently using the ***Goroutines*** and ***Channels***.
+#### Add to Favorites 
+When the ***heart button*** is pressed, the displayed image is added to the favorites by using the image-id and sub-id. Meanwhile, another image is fetched. This two activities are done concurrently using the ***Goroutines*** and ***Channels***.
   - To check this functionality, open the ***Inspect*** window and then click on ***Network***. After that, select ***Fetch/XHR*** from the tabs. Finally, refresh the page and observe the changes. Only one API **add-to-favourites**(***http://localhost:8080/api/add-to-favourites***) is called. This happens because two APIs are used concurrently.
-2. **Voting**: If the ***Like*** or ***Dislike*** button is pressed, then voting for the Image on display is executed. For liking, value 1 is added and, for disliking, value -1 is added. To check *all the votes*, go to the address ***http://localhost:8080/api/votes***. Meanwhile, another image is fetched. This two activities are done concurrently using the ***Goroutines*** and ***Channels***.
+#### Voting (Like and Dislike) 
+If the ***Like*** or ***Dislike*** button is pressed, then voting for the Image on display is executed. For liking, value 1 is added and, for disliking, value -1 is added. To check *all the votes*, go to the address ***http://localhost:8080/api/votes***. Meanwhile, another image is fetched. This two activities are done concurrently using the ***Goroutines*** and ***Channels***.
   - This functionality can be checked in a similar manner. In the Inspect window, only one API **vote**(***http://localhost:8080/api/vote***) is observed when like or dislike button is pressed.
 
 ### Breeds
