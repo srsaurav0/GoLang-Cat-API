@@ -66,3 +66,7 @@ tmp/
 # Environments
 venv
 .venv
+
+coverage.html
+coverage.out
+GoLang-Cat-API
