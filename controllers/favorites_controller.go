@@ -127,7 +127,7 @@ func (c *CatController) AddToFavourites() {
 	fmt.Println("Mark!:", nextImage)
 
 	if len(errors) > 0 {
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Data["json"] = map[string]interface{}{
 			"error":   "Failed to complete tasks",
 			"details": errors,
@@ -192,7 +192,7 @@ func (c *CatController) GetFavourites() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to fetch favourites")
 		return
 	}
@@ -218,7 +218,7 @@ func (c *CatController) RemoveFavourite() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to remove favourite")
 		return
 	} else {
@@ -239,7 +239,7 @@ func (c *CatController) Vote() {
 	// Read and parse the request body
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
 	if err != nil {
-		c.Ctx.Output.SetStatus(400)
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
 		c.ServeJSON()
 		return
@@ -328,7 +328,7 @@ func (c *CatController) Vote() {
 		for _, err := range errors {
 			fmt.Println("Individual error:", err) // Log individual errors
 		}
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Data["json"] = map[string]interface{}{
 			"error":   "Failed to complete tasks",
 			"details": errors,

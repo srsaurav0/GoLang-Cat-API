@@ -124,8 +124,8 @@ func (c *CatController) GetVotes() {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/votes?%s", baseURL, queryParams), nil)
 	if err != nil {
-		fmt.Println("Error creating request to Cat API:", err)
-		c.Ctx.Output.SetStatus(500)
+		// fmt.Println("Error creating request to Cat API:", err)
+		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to create request")
 		return
 	}
@@ -134,7 +134,7 @@ func (c *CatController) GetVotes() {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request to Cat API:", err)
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to retrieve votes")
 		return
 	}
@@ -149,7 +149,7 @@ func (c *CatController) GetVotes() {
 	var result []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		fmt.Println("Error parsing Cat API response:", err)
-		c.Ctx.Output.SetStatus(500)
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to parse Cat API response")
 		return
 	}
