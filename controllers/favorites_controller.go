@@ -38,7 +38,7 @@ func (c *CatController) AddToFavourites() {
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
 	if err != nil {
 		fmt.Println("Error reading request body:", err)
-		c.Ctx.Output.SetStatus(400)
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
 		c.ServeJSON()
 		return
@@ -51,7 +51,7 @@ func (c *CatController) AddToFavourites() {
 	}
 	if err := json.Unmarshal(rawBody, &reqBody); err != nil {
 		fmt.Println("Error unmarshalling JSON:", err)
-		c.Ctx.Output.SetStatus(400)
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
 		c.ServeJSON()
 		return

@@ -16,6 +16,7 @@ import (
 
 	"github.com/beego/beego/v2/server/web"
 	"github.com/beego/beego/v2/server/web/context"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -99,47 +100,47 @@ func clearBreedConfig() {
 	web.AppConfig.Set("catapi_key", "")
 }
 
-// func TestCatController_FetchBreeds_RequestCreationError(t *testing.T) {
-// 	// Setup
-// 	catController := &controllers.CatController{}
+func TestCatController_FetchBreeds_RequestCreationError(t *testing.T) {
+	// Setup
+	catController := &controllers.CatController{}
 
-// 	// Create a test context
-// 	w := httptest.NewRecorder()
-// 	r := httptest.NewRequest("GET", "/breeds", nil)
-// 	ctx := context.NewContext()
-// 	ctx.Reset(w, r)
-// 	ctx.Output = context.NewOutput()
-// 	ctx.Output.Context = ctx
-// 	catController.Ctx = ctx
+	// Create a test context
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/breeds", nil)
+	ctx := context.NewContext()
+	ctx.Reset(w, r)
+	ctx.Output = context.NewOutput()
+	ctx.Output.Context = ctx
+	catController.Ctx = ctx
 
-// 	// Initialize the controller
-// 	catController.Init(ctx, "CatController", "FetchBreeds", nil)
+	// Initialize the controller
+	catController.Init(ctx, "CatController", "FetchBreeds", nil)
 
-// 	// Set an invalid URL that should cause NewRequest to fail
-// 	web.AppConfig.Set("catapi_base_url", "\x00invalid")
-// 	web.AppConfig.Set("catapi_key", "dummy-key")
+	// Set an invalid URL that should cause NewRequest to fail
+	web.AppConfig.Set("catapi_base_url", "\x00invalid")
+	web.AppConfig.Set("catapi_key", "dummy-key")
 
-// 	// Execute
-// 	catController.FetchBreeds()
+	// Execute
+	catController.FetchBreeds()
 
-// 	// Debug information
-// 	t.Logf("Response Status Code: %d", w.Code)
-// 	t.Logf("Response Body: %q", w.Body.String())
-// 	t.Logf("Response Headers: %v", w.Header())
+	// Debug information
+	t.Logf("Response Status Code: %d", w.Code)
+	t.Logf("Response Body: %q", w.Body.String())
+	t.Logf("Response Headers: %v", w.Header())
 
-// 	// Print the actual response for debugging
-// 	fmt.Printf("Status Code: %d\n", w.Code)
-// 	fmt.Printf("Response Body: %s\n", w.Body.String())
+	// Print the actual response for debugging
+	fmt.Printf("Status Code: %d\n", w.Code)
+	fmt.Printf("Response Body: %s\n", w.Body.String())
 
-// 	// Assertions with more detailed failure messages
-// 	if w.Code != 500 {
-// 		t.Errorf("Expected status code 500, got %d", w.Code)
-// 	}
+	// Assertions with more detailed failure messages
+	if w.Code != 500 {
+		t.Errorf("Expected status code 500, got %d", w.Code)
+	}
 
-// 	if body := w.Body.String(); body != "Failed to create request" {
-// 		t.Errorf("Expected body 'Failed to create request', got %q", body)
-// 	}
-// }
+	if body := w.Body.String(); body != "Failed to create request" {
+		t.Errorf("Expected body 'Failed to create request', got %q", body)
+	}
+}
 
 type mockClient struct{}
 
@@ -147,31 +148,31 @@ func (m *mockClient) Do(req *http.Request) (*http.Response, error) {
 	return nil, errors.New("network error")
 }
 
-// func TestCatController_FetchBreeds_ClientError(t *testing.T) {
-// 	// Setup
-// 	catController := &controllers.CatController{}
+func TestCatController_FetchBreeds_ClientError(t *testing.T) {
+	// Setup
+	catController := &controllers.CatController{}
 
-// 	// Create a test context
-// 	w := httptest.NewRecorder()
-// 	r := httptest.NewRequest("GET", "/breeds", nil)
-// 	beegoCtx := &context.Context{
-// 		Input:  context.NewInput(),
-// 		Output: context.NewOutput(),
-// 	}
-// 	beegoCtx.Reset(w, r)
-// 	catController.Init(beegoCtx, "CatController", "FetchBreeds", nil)
+	// Create a test context
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/breeds", nil)
+	beegoCtx := &context.Context{
+		Input:  context.NewInput(),
+		Output: context.NewOutput(),
+	}
+	beegoCtx.Reset(w, r)
+	catController.Init(beegoCtx, "CatController", "FetchBreeds", nil)
 
-// 	// Set valid URL and API key
-// 	web.AppConfig.Set("catapi_base_url", "https://api.example.com")
-// 	web.AppConfig.Set("catapi_key", "dummy-key")
+	// Set valid URL and API key
+	web.AppConfig.Set("catapi_base_url", "https://api.example.com")
+	web.AppConfig.Set("catapi_key", "dummy-key")
 
-// 	// Execute
-// 	catController.FetchBreeds()
+	// Execute
+	catController.FetchBreeds()
 
-// 	// Assertions
-// 	assert.Equal(t, http.StatusInternalServerError, w.Code, "Expected 500 status code")
-// 	assert.Contains(t, w.Body.String(), "Failed to fetch breeds", "Expected error message doesn't match")
-// }
+	// Assertions
+	assert.Equal(t, http.StatusInternalServerError, w.Code, "Expected 500 status code")
+	assert.Contains(t, w.Body.String(), "Failed to fetch breeds", "Expected error message doesn't match")
+}
 
 func TestFetchCatImages_FetchError(t *testing.T) {
 	controller, recorder := setupTest("/api/cats?breed_id=abc123")

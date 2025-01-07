@@ -17,7 +17,7 @@ func (c *CatController) FetchBreeds() {
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", baseURL+"/breeds", nil)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to create request")
 		return
 	}
@@ -26,7 +26,7 @@ func (c *CatController) FetchBreeds() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to fetch breeds")
 		return
 	}
@@ -34,7 +34,7 @@ func (c *CatController) FetchBreeds() {
 
 	var breeds []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&breeds); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to parse response")
 		return
 	}
