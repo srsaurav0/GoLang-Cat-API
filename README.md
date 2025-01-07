@@ -51,24 +51,10 @@ git clone https://github.com/srsaurav0/GoLang-Cat-API.git
 cd GoLang-Cat-API
 ```
 
-### Create Virtual Environment
-- For Linux:
-  ```bash
-  python3 -m venv .venv
-  source .venv/bin/activate
-  ```
-- For Windows:
-  ```bash
-  python -m venv .venv
-  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-  .venv\Scripts\activate
-  ```
-
 ### Beego Setup
 - **For Linux**:
   - Download Beego
     ```bash
-    go get github.com/beego/beego/v2@v2.3.4
     go get github.com/beego/bee/v2@latest
     ```
   - Set Path
@@ -84,7 +70,6 @@ cd GoLang-Cat-API
 -**For Windows**:
   - Download Beego
     ```bash
-    go get github.com/beego/beego/v2@v2.3.4
     go get github.com/beego/bee/v2@latest
     ```
   - Check if installed successfully

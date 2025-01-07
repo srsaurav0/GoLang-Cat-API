@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/beego/beego/v2/server/web"
 )
@@ -16,100 +15,16 @@ import (
 type CatController struct {
 	web.Controller
 	HTTPClient *http.Client
+	Client     HTTPClient
 }
 
-// Structs to unmarshal Cat API responses
-type CatImage struct {
-	ID     string `json:"id"`
-	URL    string `json:"url"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 type FavouriteRequest struct {
 	ImageID string `json:"image_id"`
 	SubID   string `json:"sub_id"`
-}
-
-// FetchCatImages handles the request to fetch random cat images
-func (c *CatController) FetchCatImages() {
-	if c.Data == nil {
-		c.Data = make(map[interface{}]interface{})
-	}
-	baseURL, err := web.AppConfig.String("catapi_base_url")
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to load Cat API base URL from config")
-		return
-	}
-
-	apiKey, err := web.AppConfig.String("catapi_key")
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to load Cat API key from config")
-		return
-	}
-
-	// Get the breed_id from the request
-	breedID := c.GetString("breed_id")
-
-	// Fetch images using the helper function
-	images, err := fetchCatImages(baseURL, apiKey, breedID)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Data["json"] = map[string]string{"error": err.Error()}
-		c.ServeJSON()
-		return
-	}
-
-	// Return the fetched images as JSON
-	c.Data["json"] = images
-	c.ServeJSON()
-}
-
-// FetchBreeds handles the request to fetch all cat breeds
-func (c *CatController) FetchBreeds() {
-	baseURL, err := web.AppConfig.String("catapi_base_url")
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to load API base URL from config")
-		return
-	}
-
-	apiKey, err := web.AppConfig.String("catapi_key")
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to load API key from config")
-		return
-	}
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", baseURL+"/breeds", nil)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to create request")
-		return
-	}
-
-	req.Header.Set("x-api-key", apiKey)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to fetch breeds")
-		return
-	}
-	defer resp.Body.Close()
-
-	var breeds []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&breeds); err != nil {
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to parse response")
-		return
-	}
-
-	c.Data["json"] = breeds
-	c.ServeJSON()
 }
 
 func (c *CatController) AddToFavourites() {
@@ -120,13 +35,9 @@ func (c *CatController) AddToFavourites() {
 	baseURL, _ := web.AppConfig.String("catapi_base_url")
 	apiKey, _ := web.AppConfig.String("catapi_key")
 
-	// Read the raw body
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
 	if err != nil {
 		fmt.Println("Error reading request body:", err)
-		if c.Data == nil {
-			c.Data = make(map[interface{}]interface{}) // Initialize if nil
-		}
 		c.Ctx.Output.SetStatus(400)
 		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
 		c.ServeJSON()
@@ -134,7 +45,6 @@ func (c *CatController) AddToFavourites() {
 	}
 	fmt.Println("Raw request body:", string(rawBody)) // Log the raw request body for debugging
 
-	// Parse the request body into a struct
 	var reqBody struct {
 		ImageID string `json:"image_id"`
 		SubID   string `json:"sub_id"`
@@ -148,23 +58,19 @@ func (c *CatController) AddToFavourites() {
 	}
 	fmt.Println("Parsed request body:", reqBody)
 
-	// Channels to handle tasks
-	addToFavoritesChan := make(chan error, 1)             // Buffered channel to avoid blocking
-	nextImageChan := make(chan map[string]interface{}, 1) // Buffered channel
-	errorChan := make(chan error, 2)                      // Buffered channel
+	addToFavoritesChan := make(chan error, 1)
+	nextImageChan := make(chan map[string]interface{}, 1)
+	errorChan := make(chan error, 2)
 
-	// WaitGroup to manage goroutines
 	var wg sync.WaitGroup
 
-	// Task 1: Add image to favorites
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		err := addToFavorites(baseURL, apiKey, reqBody.ImageID, reqBody.SubID)
-		addToFavoritesChan <- err // Send result to channel
+		addToFavoritesChan <- err
 	}()
 
-	// Task 2: Fetch the next image
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -174,13 +80,12 @@ func (c *CatController) AddToFavourites() {
 			return
 		}
 		if len(images) > 0 {
-			nextImageChan <- images[0] // Send the first image to the channel
+			nextImageChan <- images[0]
 		} else {
 			errorChan <- fmt.Errorf("No images available")
 		}
 	}()
 
-	// Close channels after all goroutines are done
 	go func() {
 		wg.Wait()
 		close(addToFavoritesChan)
@@ -188,7 +93,6 @@ func (c *CatController) AddToFavourites() {
 		close(errorChan)
 	}()
 
-	// Aggregate results
 	var addToFavoritesErr error
 	var nextImage map[string]interface{}
 	var errors []error
@@ -215,7 +119,6 @@ func (c *CatController) AddToFavourites() {
 			}
 		}
 
-		// Break when all channels are closed
 		if addToFavoritesChan == nil && nextImageChan == nil && errorChan == nil {
 			break
 		}
@@ -223,7 +126,6 @@ func (c *CatController) AddToFavourites() {
 
 	fmt.Println("Mark!:", nextImage)
 
-	// Handle errors
 	if len(errors) > 0 {
 		c.Ctx.Output.SetStatus(500)
 		c.Data["json"] = map[string]interface{}{
@@ -234,7 +136,6 @@ func (c *CatController) AddToFavourites() {
 		return
 	}
 
-	// Return success with the next image
 	c.Data["json"] = map[string]interface{}{
 		"message":          "Image added to favorites and next image fetched",
 		"next_image":       nextImage,
@@ -264,43 +165,6 @@ func addToFavorites(baseURL, apiKey, imageID, subID string) error {
 		return fmt.Errorf("Failed to add to favorites: %s", resp.Status)
 	}
 	return nil
-}
-
-func fetchCatImages(baseURL, apiKey, breedID string) ([]map[string]interface{}, error) {
-	client := &http.Client{}
-
-	// Construct the request URL
-	requestURL := fmt.Sprintf("%s/images/search?limit=15", baseURL)
-	if breedID != "" {
-		requestURL += fmt.Sprintf("&breed_id=%s", breedID) // Append breed_id if provided
-	}
-
-	// Create the request
-	req, err := http.NewRequest("GET", requestURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %w", err)
-	}
-	req.Header.Set("x-api-key", apiKey)
-
-	// Execute the request
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch images: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check for unexpected status codes
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Unexpected response status: %d", resp.StatusCode)
-	}
-
-	// Parse the response body
-	var images []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&images); err != nil {
-		return nil, fmt.Errorf("Failed to decode response: %w", err)
-	}
-
-	return images, nil
 }
 
 func (c *CatController) GetFavourites() {
@@ -481,83 +345,5 @@ func (c *CatController) Vote() {
 		"vote":       voteResult,
 		"next_image": nextImage,
 	}
-	c.ServeJSON()
-}
-
-func submitVote(baseURL, apiKey string, payload []byte) (map[string]interface{}, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("POST", baseURL+"/votes", bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create vote request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", apiKey)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to submit vote: %w", err)
-	}
-	defer resp.Body.Close()
-
-	rawResponseBody, _ := io.ReadAll(resp.Body)
-	fmt.Println("Raw response from The Cat API:", string(rawResponseBody))
-
-	// Treat both 200 and 201 as successful responses
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, string(rawResponseBody))
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(rawResponseBody, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse Cat API response: %w", err)
-	}
-
-	fmt.Println("Parsed response from Cat API:", result)
-	return result, nil
-}
-
-func (c *CatController) GetVotes() {
-	baseURL, _ := web.AppConfig.String("catapi_base_url")
-	apiKey, _ := web.AppConfig.String("catapi_key")
-
-	// Forward query parameters
-	queryParams := c.Ctx.Request.URL.RawQuery
-
-	// Create the GET request to The Cat API
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/votes?%s", baseURL, queryParams), nil)
-	if err != nil {
-		fmt.Println("Error creating request to Cat API:", err)
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to create request")
-		return
-	}
-	req.Header.Set("x-api-key", apiKey)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Error sending request to Cat API:", err)
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to retrieve votes")
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		c.Ctx.Output.SetStatus(resp.StatusCode)
-		c.Ctx.WriteString("Failed to retrieve votes")
-		return
-	}
-
-	var result []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		fmt.Println("Error parsing Cat API response:", err)
-		c.Ctx.Output.SetStatus(500)
-		c.Ctx.WriteString("Failed to parse Cat API response")
-		return
-	}
-
-	fmt.Println("Votes retrieved from Cat API:", result)
-	c.Data["json"] = result
 	c.ServeJSON()
 }
