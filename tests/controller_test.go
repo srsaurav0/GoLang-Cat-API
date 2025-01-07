@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -85,16 +86,6 @@ func setupBreedTest(t *testing.T) (*controllers.CatController, *httptest.Respons
 	return controller, recorder
 }
 
-// func setConfig(baseURL, apiKey string) error {
-// 	if err := web.AppConfig.Set("catapi_base_url", baseURL); err != nil {
-// 		return err
-// 	}
-// 	if err := web.AppConfig.Set("catapi_key", apiKey); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
 func clearBreedConfig() {
 	web.AppConfig.Set("catapi_base_url", "")
 	web.AppConfig.Set("catapi_key", "")
@@ -129,8 +120,8 @@ func TestCatController_FetchBreeds_RequestCreationError(t *testing.T) {
 	t.Logf("Response Headers: %v", w.Header())
 
 	// Print the actual response for debugging
-	fmt.Printf("Status Code: %d\n", w.Code)
-	fmt.Printf("Response Body: %s\n", w.Body.String())
+	log.Printf("Status Code: %d\n", w.Code)
+	log.Printf("Response Body: %s\n", w.Body.String())
 
 	// Assertions with more detailed failure messages
 	if w.Code != 500 {
@@ -211,40 +202,6 @@ func (m *mockClientInvalidJSON) Do(req *http.Request) (*http.Response, error) {
 	}
 	return r, nil
 }
-
-// func TestCatController_FetchBreeds_InvalidJSON(t *testing.T) {
-// 	// Setup
-// 	catController := &controllers.CatController{
-// 		Client: &mockClientInvalidJSON{},
-// 	}
-
-// 	// Create a test context
-// 	w := httptest.NewRecorder()
-// 	r := httptest.NewRequest("GET", "/breeds", nil)
-// 	ctx := context.NewContext()
-
-// 	// Create a new response writer wrapper
-// 	ctx.Input = context.NewInput()
-// 	ctx.Request = r
-// 	ctx.Output = context.NewOutput()
-// 	ctx.ResponseWriter = &context.Response{
-// 		ResponseWriter: w,
-// 	}
-
-// 	// Initialize the controller
-// 	catController.Init(ctx, "CatController", "FetchBreeds", nil)
-
-// 	// Set valid URL and API key
-// 	web.AppConfig.Set("catapi_base_url", "https://api.example.com")
-// 	web.AppConfig.Set("catapi_key", "dummy-key")
-
-// 	// Execute
-// 	catController.FetchBreeds()
-
-// 	// Assertions
-// 	assert.Equal(t, 500, w.Code, "Expected 500 status code")
-// 	assert.Equal(t, "Failed to parse response", w.Body.String(), "Expected error message doesn't match")
-// }
 
 func TestFetchBreeds_Success(t *testing.T) {
 	// Start mock server

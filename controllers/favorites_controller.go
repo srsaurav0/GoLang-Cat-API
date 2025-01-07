@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
 
@@ -37,26 +38,26 @@ func (c *CatController) AddToFavourites() {
 
 	rawBody, err := io.ReadAll(c.Ctx.Request.Body)
 	if err != nil {
-		fmt.Println("Error reading request body:", err)
+		log.Println("Error reading request body:", err)
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Failed to read request body"}
 		c.ServeJSON()
 		return
 	}
-	fmt.Println("Raw request body:", string(rawBody)) // Log the raw request body for debugging
+	log.Println("Raw request body:", string(rawBody)) // Log the raw request body for debugging
 
 	var reqBody struct {
 		ImageID string `json:"image_id"`
 		SubID   string `json:"sub_id"`
 	}
 	if err := json.Unmarshal(rawBody, &reqBody); err != nil {
-		fmt.Println("Error unmarshalling JSON:", err)
+		log.Println("Error unmarshalling JSON:", err)
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
 		c.ServeJSON()
 		return
 	}
-	fmt.Println("Parsed request body:", reqBody)
+	log.Println("Parsed request body:", reqBody)
 
 	addToFavoritesChan := make(chan error, 1)
 	nextImageChan := make(chan map[string]interface{}, 1)
@@ -124,7 +125,7 @@ func (c *CatController) AddToFavourites() {
 		}
 	}
 
-	fmt.Println("Mark!:", nextImage)
+	log.Println("Mark!:", nextImage)
 
 	if len(errors) > 0 {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
@@ -324,7 +325,7 @@ func (c *CatController) Vote() {
 
 	// Handle errors
 	if len(errors) > 0 {
-		fmt.Println("Error details:", errors) // Log all errors in the slice
+		log.Println("Error details:", errors) // Log all errors in the slice
 		for _, err := range errors {
 			fmt.Println("Individual error:", err) // Log individual errors
 		}
@@ -337,7 +338,7 @@ func (c *CatController) Vote() {
 		return
 	}
 
-	fmt.Println("Mark 5")
+	log.Println("Mark 5")
 
 	// Return success with vote result and next image
 	c.Data["json"] = map[string]interface{}{

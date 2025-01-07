@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/beego/beego/v2/server/web"
@@ -97,7 +98,7 @@ func submitVote(baseURL, apiKey string, payload []byte) (map[string]interface{},
 	defer resp.Body.Close()
 
 	rawResponseBody, _ := io.ReadAll(resp.Body)
-	fmt.Println("Raw response from The Cat API:", string(rawResponseBody))
+	log.Println("Raw response from The Cat API:", string(rawResponseBody))
 
 	// Treat both 200 and 201 as successful responses
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
@@ -109,7 +110,7 @@ func submitVote(baseURL, apiKey string, payload []byte) (map[string]interface{},
 		return nil, fmt.Errorf("failed to parse Cat API response: %w", err)
 	}
 
-	fmt.Println("Parsed response from Cat API:", result)
+	log.Println("Parsed response from Cat API:", result)
 	return result, nil
 }
 
@@ -133,7 +134,7 @@ func (c *CatController) GetVotes() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error sending request to Cat API:", err)
+		log.Println("Error sending request to Cat API:", err)
 		c.Ctx.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to retrieve votes")
 		return
@@ -148,13 +149,13 @@ func (c *CatController) GetVotes() {
 
 	var result []map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		fmt.Println("Error parsing Cat API response:", err)
+		log.Println("Error parsing Cat API response:", err)
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Ctx.WriteString("Failed to parse Cat API response")
 		return
 	}
 
-	fmt.Println("Votes retrieved from Cat API:", result)
+	log.Println("Votes retrieved from Cat API:", result)
 	c.Data["json"] = result
 	c.ServeJSON()
 }
