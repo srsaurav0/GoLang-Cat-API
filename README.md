@@ -1,4 +1,4 @@
-# Cat Voting API Project
+# Cat Voting API
 
 ## Table of Contents
 - [Overview](#overview)
